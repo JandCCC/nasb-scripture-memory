@@ -60,6 +60,8 @@
       padding: 18px 14px;
       background: var(--forest);
       color: #f6f3ef;
+      overflow-y: auto;
+      max-height: 760px;
     }
 
     .brand {
@@ -110,6 +112,7 @@
       flex-direction: column;
       gap: 18px;
       background: linear-gradient(180deg, #fdfbf8 0%, #f3f6f0 100%);
+      overflow-y: auto;
     }
 
     .topbar {
@@ -190,6 +193,36 @@
       background: var(--forest-soft-2);
       padding: 16px;
       border: 1px solid rgba(41,77,60,0.08);
+    }
+
+    .chapter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chapter-btn {
+      appearance: none;
+      border: 1px solid rgba(41,77,60,0.18);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.15s ease;
+    }
+
+    .chapter-btn.selected {
+      background: var(--forest);
+      color: #f3efe8;
+      border-color: var(--forest);
+    }
+
+    .chapter-btn:hover {
+      background: var(--forest-soft-2);
     }
 
     select, input, button {
@@ -350,6 +383,8 @@
       border-radius: 0;
       padding: 18px 16px;
       background: #f7f4ee;
+      overflow-y: auto;
+      max-height: 760px;
     }
 
     .progress-panel .box {
@@ -425,13 +460,18 @@
               </div>
               <div class="setup-block">
                 <label class="label" for="minVerse">Min verse</label>
-                <select id="minVerse"></select>
+                <input id="minVerse" type="number" min="1" value="1" />
               </div>
               <div class="setup-block">
                 <label class="label" for="maxVerse">Max verse</label>
-                <select id="maxVerse"></select>
+                <input id="maxVerse" type="number" min="1" value="1" />
               </div>
             </div>
+          </div>
+
+          <div class="panel-box">
+            <div class="label">Select Chapters</div>
+            <div id="chapterList" class="chapter-grid"></div>
           </div>
 
           <div class="button-row">
@@ -548,6 +588,7 @@
       selectedBook: "1 Peter",
       mode: "keywords",
       selectedVerses: [],
+      selectedChapters: new Set(),
       currentIndex: 0,
       currentVerse: null,
       revealed: false,
@@ -563,6 +604,7 @@
     const modeSelectEl = document.getElementById("modeSelect");
     const minVerseEl = document.getElementById("minVerse");
     const maxVerseEl = document.getElementById("maxVerse");
+    const chapterListEl = document.getElementById("chapterList");
     const startBtn = document.getElementById("startBtn");
     const quizScreenEl = document.getElementById("quizScreen");
     const setupScreenEl = document.getElementById("setupScreen");
@@ -594,7 +636,7 @@
         btn.addEventListener("click", () => {
           state.selectedBook = book;
           syncBookSelection();
-          updateVerseRange();
+          updateChapterSelection();
           setPageState("setup");
         });
         bookListEl.appendChild(btn);
@@ -610,25 +652,39 @@
       modeTagEl.textContent = state.mode === "keywords" ? "Keywords" : "Verse Recall";
     }
 
-    function updateVerseRange() {
+    function getChaptersForBook() {
       const list = verses[state.selectedBook] || [];
-      const highest = Math.max(...list.map(v => v.verse), 1);
-      minVerseEl.innerHTML = "";
-      maxVerseEl.innerHTML = "";
+      const chapters = new Set(list.map(v => v.chapter));
+      return Array.from(chapters).sort((a, b) => a - b);
+    }
 
-      for (let i = 1; i <= highest; i++) {
-        const minOpt = document.createElement("option");
-        minOpt.value = String(i);
-        minOpt.textContent = String(i);
-        const maxOpt = document.createElement("option");
-        maxOpt.value = String(i);
-        maxOpt.textContent = String(i);
-        minVerseEl.appendChild(minOpt);
-        maxVerseEl.appendChild(maxOpt);
-      }
+    function updateChapterSelection() {
+      const chapters = getChaptersForBook();
+      const highest = Math.max(...chapters, 1);
+      
+      minVerseEl.max = highest;
+      maxVerseEl.max = highest;
+      minVerseEl.value = 1;
+      maxVerseEl.value = highest;
 
-      minVerseEl.value = "1";
-      maxVerseEl.value = String(highest);
+      state.selectedChapters.clear();
+      chapters.forEach(ch => state.selectedChapters.add(ch));
+
+      chapterListEl.innerHTML = "";
+      chapters.forEach((chapter) => {
+        const btn = document.createElement("button");
+        btn.className = "chapter-btn selected";
+        btn.textContent = chapter;
+        btn.addEventListener("click", () => {
+          btn.classList.toggle("selected");
+          if (state.selectedChapters.has(chapter)) {
+            state.selectedChapters.delete(chapter);
+          } else {
+            state.selectedChapters.add(chapter);
+          }
+        });
+        chapterListEl.appendChild(btn);
+      });
     }
 
     function populateBookSelect() {
@@ -652,7 +708,12 @@
       const all = verses[state.selectedBook] || [];
       const minVerse = Number(minVerseEl.value || 1);
       const maxVerse = Number(maxVerseEl.value || all.length);
-      return all.filter(v => v.verse >= minVerse && v.verse <= maxVerse);
+      
+      return all.filter(v => 
+        state.selectedChapters.has(v.chapter) &&
+        v.verse >= minVerse && 
+        v.verse <= maxVerse
+      );
     }
 
     function buildCurrentKeywordMarkup(verse) {
@@ -764,9 +825,14 @@
     }
 
     function beginQuiz() {
+      if (state.selectedChapters.size === 0) {
+        setMessage("Please select at least one chapter.", "error");
+        return;
+      }
+      
       const list = getQuestionsForBook();
       if (!list.length) {
-        setMessage("No verses match that range.", "error");
+        setMessage("No verses match that selection.", "error");
         return;
       }
 
@@ -779,7 +845,7 @@
     function setSelectedBookFromSelect() {
       state.selectedBook = bookSelectEl.value;
       syncBookSelection();
-      updateVerseRange();
+      updateChapterSelection();
     }
 
     function bindEvents() {
@@ -787,18 +853,6 @@
       modeSelectEl.addEventListener("change", (e) => {
         state.mode = e.target.value;
         syncBookSelection();
-      });
-
-      minVerseEl.addEventListener("change", () => {
-        const min = Number(minVerseEl.value);
-        const max = Number(maxVerseEl.value);
-        if (min > max) maxVerseEl.value = min;
-      });
-
-      maxVerseEl.addEventListener("change", () => {
-        const max = Number(maxVerseEl.value);
-        const min = Number(minVerseEl.value);
-        if (max < min) minVerseEl.value = max;
       });
 
       startBtn.addEventListener("click", beginQuiz);
@@ -821,7 +875,7 @@
 
     populateBookSelect();
     buildBookList();
-    updateVerseRange();
+    updateChapterSelection();
     syncBookSelection();
     bindEvents();
     updateProgressSidebar();
