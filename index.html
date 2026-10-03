@@ -285,11 +285,12 @@
       padding: 18px;
       text-align: center;
       color: var(--forest-deep);
-      font-size: clamp(1.1rem, 2vw, 2rem);
-      line-height: 1.8;
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      line-height: 1.9;
       font-weight: 500;
       white-space: normal;
       word-wrap: break-word;
+      word-break: break-word;
     }
 
     .reveal-zone.empty {
@@ -299,16 +300,18 @@
 
     .keyword {
       display: inline;
-      padding: 0 0.15em;
-      background: rgba(94, 140, 106, 0.15);
+      padding: 2px 4px;
+      margin: 0 2px;
+      background: rgba(94, 140, 106, 0.2);
       color: var(--forest-deep);
-      border: 1px solid rgba(94, 140, 106, 0.2);
+      border-radius: 3px;
+      font-weight: 600;
     }
 
     .keyword.current {
-      background: rgba(77, 123, 180, 0.18);
-      border-color: rgba(77, 123, 180, 0.35);
-      color: var(--forest-deep);
+      background: rgba(77, 123, 180, 0.35);
+      color: #1a3a5c;
+      font-weight: 700;
     }
 
     .answer-wrap {
@@ -722,15 +725,18 @@
       const words = verse.text.split(/\s+/);
 
       return words.map((word) => {
-        const clean = word.replace(/[.,;:!?'"\-]/g, "");
+        const clean = word.replace(/[.,;:!?'"\-—]/g, "");
         const lower = clean.toLowerCase();
         let className = "keyword";
-        if (keywordMap.has(lower)) {
-          className += " green";
-        }
+        
         if (lower === currentKeyword.toLowerCase()) {
-          className += " current";
+          className = "keyword current";
+        } else if (keywordMap.has(lower)) {
+          className = "keyword";
+        } else {
+          return word;
         }
+        
         return `<span class="${className}">${word}</span>`;
       }).join(" ");
     }
@@ -763,7 +769,7 @@
         state.revealed = true;
         revealZoneEl.classList.remove("empty");
         revealZoneEl.innerHTML = buildCurrentKeywordMarkup(state.currentVerse);
-        setMessage("Keywords are highlighted. Press space again to mark as correct.");
+        setMessage("Keywords highlighted. Space again to mark correct.");
       } else if (state.spacebarPressCount === 2) {
         recordAnswer(true);
       }
