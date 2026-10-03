@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scripture Memory</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf9;
+      --panel-soft: #eef4ee;
+      --forest: #294d3c;
+      --forest-deep: #1c382f;
+      --forest-soft: #dfe8df;
+      --forest-soft-2: #e7efe7;
+      --ink: #1d2a22;
+      --muted: #586a60;
+      --cream: #f8f3ea;
+      --green-key: #5e8c6a;
+      --blue-key: #4d7bb4;
+      --danger: #8d4750;
+      --shadow: rgba(13, 28, 24, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1280px;
+      margin: 28px auto;
+      padding: 0 18px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px 1fr 220px;
+      min-height: 760px;
+      gap: 18px;
+    }
+
+    .sidebar, .main, .progress-panel {
+      background: var(--panel);
+      border: 1px solid rgba(41, 77, 60, 0.08);
+      box-shadow: 0 12px 24px var(--shadow);
+    }
+
+    .sidebar {
+      border-radius: 0;
+      padding: 18px 14px;
+      background: var(--forest);
+      color: #f6f3ef;
+    }
+
+    .brand {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin: 8px 8px 18px;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      margin: 18px 8px 10px;
+      font-weight: 700;
+    }
+
+    .book-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .book-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
+      color: #f4f1ee;
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    .book-btn.active {
+      background: var(--forest-soft);
+      color: var(--forest-deep);
+      border-color: var(--forest-soft);
+    }
+
+    .main {
+      border-radius: 0;
+      padding: 22px 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: linear-gradient(180deg, #fdfbf8 0%, #f3f6f0 100%);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(41, 77, 60, 0.08);
+    }
+
+    .topbar-title {
+      font-size: clamp(1.6rem, 2vw, 2.4rem);
+      font-weight: 800;
+      color: var(--forest-deep);
+      margin: 0;
+    }
+
+    .mode-tag {
+      background: var(--forest-soft);
+      color: var(--forest-deep);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 8px 12px;
+      border: 1px solid rgba(41,77,60,0.08);
+      border-radius: 0;
+    }
+
+    .progress-text {
+      font-size: 0.82rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .setup-screen,
+    .quiz-screen,
+    .result-screen {
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+    }
+
+    .setup-screen.visible,
+    .quiz-screen.visible,
+    .result-screen.visible {
+      display: flex;
+    }
+
+    .panel-box {
+      background: #f8f5ef;
+      border: 1px solid rgba(41,77,60,0.08);
+      padding: 18px;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(160px, 1fr));
+      gap: 18px;
+    }
+
+    .setup-block {
+      background: var(--forest-soft-2);
+      padding: 16px;
+      border: 1px solid rgba(41,77,60,0.08);
+    }
+
+    select, input, button {
+      width: 100%;
+      border: 1px solid rgba(41,77,60,0.18);
+      background: #fff;
+      color: var(--ink);
+      padding: 11px 12px;
+      font-size: 1rem;
+      border-radius: 0;
+    }
+
+    button.square {
+      appearance: none;
+      background: var(--forest);
+      color: #f3efe8;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 13px 18px;
+      letter-spacing: 0.04em;
+      transition: opacity 0.15s ease;
+    }
+
+    button.square:hover { opacity: 0.96; }
+
+    button.secondary {
+      background: var(--forest-soft);
+      color: var(--forest-deep);
+      border: 1px solid rgba(41,77,60,0.08);
+    }
+
+    .quiz-card {
+      flex: 1;
+      background: linear-gradient(180deg, #f8f5ee 0%, #edf4ee 100%);
+      border: 1px solid rgba(41,77,60,0.08);
+      padding: 20px;
+      min-height: 350px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .verse-ref {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 800;
+      color: var(--forest);
+      margin-bottom: 16px;
+    }
+
+    .reveal-zone {
+      background: rgba(255,255,255,0.12);
+      border: 1px dashed rgba(41,77,60,0.15);
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      text-align: center;
+      color: var(--forest-deep);
+      font-size: clamp(1.1rem, 2vw, 2rem);
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    .reveal-zone.empty {
+      color: var(--muted);
+      font-size: 1.05rem;
+      border-style: dashed;
+    }
+
+    .keyword {
+      display: inline-block;
+      padding: 0 0.15em;
+      background: rgba(94, 140, 106, 0.15);
+      color: var(--forest-deep);
+      border: 1px solid rgba(94, 140, 106, 0.2);
+    }
+
+    .keyword.current {
+      background: rgba(77, 123, 180, 0.18);
+      border-color: rgba(77, 123, 180, 0.35);
+      color: var(--forest-deep);
+    }
+
+    .answer-wrap {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .answer-wrap input {
+      border: 1px solid rgba(41,77,60,0.18);
+      background: #fff;
+      padding: 14px 12px;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .button-row > * {
+      flex: 1 1 160px;
+    }
+
+    .message {
+      min-height: 20px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .message.success { color: var(--forest); }
+    .message.error { color: var(--danger); }
+
+    .result-box {
+      background: var(--forest-soft-2);
+      border: 1px solid rgba(41,77,60,0.08);
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .result-box h3 {
+      margin: 0;
+      font-size: 2rem;
+      color: var(--forest-deep);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      background: #f8f5ef;
+      border: 1px solid rgba(41,77,60,0.08);
+      padding: 14px;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .metric-value {
+      font-size: 1.9rem;
+      color: var(--forest-deep);
+      font-weight: 800;
+    }
+
+    .progress-panel {
+      border-radius: 0;
+      padding: 18px 16px;
+      background: #f7f4ee;
+    }
+
+    .progress-panel .box {
+      background: var(--forest-soft-2);
+      border: 1px solid rgba(41,77,60,0.08);
+      padding: 14px 12px;
+      margin-bottom: 12px;
+    }
+
+    .progress-panel .box .title {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .progress-panel .box .value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--forest-deep);
+    }
+
+    .panel-title {
+      font-size: 1rem;
+      color: var(--forest-deep);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .progress-panel {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">Scripture</div>
+
+        <div class="section-label">Books</div>
+        <div id="bookList" class="book-list"></div>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <h1 id="pageTitle" class="topbar-title">Memorize</h1>
+          <div id="modeTag" class="mode-tag">Quiz</div>
+        </div>
+
+        <div id="setupScreen" class="setup-screen visible">
+          <div class="panel-box">
+            <div class="label">Book setup</div>
+            <div class="setup-grid">
+              <div class="setup-block">
+                <label class="label" for="modeSelect">Quiz type</label>
+                <select id="modeSelect">
+                  <option value="keywords">Keywords</option>
+                  <option value="verse">Verse Recall</option>
+                </select>
+              </div>
+              <div class="setup-block">
+                <label class="label" for="bookSelect">Book</label>
+                <select id="bookSelect"></select>
+              </div>
+              <div class="setup-block">
+                <label class="label" for="minVerse">Min verse</label>
+                <select id="minVerse"></select>
+              </div>
+              <div class="setup-block">
+                <label class="label" for="maxVerse">Max verse</label>
+                <select id="maxVerse"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="startBtn" class="square">Start</button>
+          </div>
+        </div>
+
+        <div id="quizScreen" class="quiz-screen">
+          <div class="progress-text" id="progressText">0/0</div>
+
+          <div class="quiz-card">
+            <div id="verseRef" class="verse-ref">1 Peter 1:3</div>
+            <div id="revealZone" class="reveal-zone empty">Quote the verse to yourself.</div>
+            <div class="answer-wrap">
+              <input id="answerInput" type="text" placeholder="Type the verse here..." />
+              <div class="button-row">
+                <button id="checkBtn" class="square">Check</button>
+                <button id="skipBtn" class="square secondary">Skip</button>
+              </div>
+            </div>
+            <div id="message" class="message"></div>
+          </div>
+        </div>
+
+        <div id="resultScreen" class="result-screen">
+          <div class="result-box">
+            <h3>Finished</h3>
+            <div class="result-grid">
+              <div class="metric">
+                <div class="metric-label">Correct</div>
+                <div id="resultCorrect" class="metric-value">0</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Total</div>
+                <div id="resultTotal" class="metric-value">0</div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">Accuracy</div>
+                <div id="resultAccuracy" class="metric-value">0%</div>
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="retryBtn" class="square">Retry</button>
+              <button id="newBookBtn" class="square secondary">Choose Book</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="progress-panel">
+        <div class="panel-title">Progress</div>
+        <div class="box">
+          <div class="title">Correct</div>
+          <div id="correctValue" class="value">0</div>
+        </div>
+        <div class="box">
+          <div class="title">Attempts</div>
+          <div id="attemptValue" class="value">0</div>
+        </div>
+        <div class="box">
+          <div class="title">Accuracy</div>
+          <div id="accuracyValue" class="value">0%</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const books = ["1 Peter", "James", "Philippians", "Colossians", "Titus"];
+
+    const verses = {
+      "1 Peter": [
+        { chapter: 1, verse: 3, text: "Blessed be the God and Father of our Lord Jesus Christ, who according to His great mercy has caused us to be born again to a living hope through the resurrection of Jesus Christ from the dead", keywords: ["Blessed", "Father", "mercy", "born", "hope", "resurrection"] },
+        { chapter: 1, verse: 8, text: "And though you have not seen Him, you love Him, and though you do not see Him now, but believe in Him, you greatly rejoice with joy inexpressible and full of glory", keywords: ["love", "believe", "joy", "glory"] },
+        { chapter: 2, verse: 9, text: "But you are a chosen race, a royal priesthood, a holy nation, a people for God's own possession, so that you may proclaim the excellencies of Him who has called you out of darkness into His marvelous light", keywords: ["chosen", "royal", "nation", "darkness", "light"] },
+        { chapter: 3, verse: 15, text: "Sanctify Christ as Lord in your hearts, always being ready to make a defense to everyone who asks you to give an account for the hope that is in you, yet with gentleness and reverence", keywords: ["Sanctify", "Lord", "defense", "hope", "gentleness", "reverence"] },
+        { chapter: 4, verse: 8, text: "Above all, keep fervent in your love for one another, because love covers a multitude of sins", keywords: ["fervent", "love", "sins"] },
+        { chapter: 5, verse: 7, text: "Casting all your anxiety on Him, because He cares for you", keywords: ["anxiety", "cares"] }
+      ],
+      "James": [
+        { chapter: 1, verse: 2, text: "Consider it all joy, my brethren, when you encounter various trials", keywords: ["joy", "brethren", "trials"] },
+        { chapter: 1, verse: 5, text: "But if any of you lacks wisdom, let him ask of God, who gives to all generously and without reproach, and it will be given to him", keywords: ["wisdom", "God", "generously", "reproach"] },
+        { chapter: 2, verse: 17, text: "Even so faith, if it has no works, is dead, being by itself", keywords: ["faith", "works", "dead"] },
+        { chapter: 3, verse: 5, text: "So also the tongue is a small part of the body, and yet it boasts of great things", keywords: ["tongue", "boasts", "great"] },
+        { chapter: 4, verse: 8, text: "Draw near to God and He will draw near to you", keywords: ["Draw", "God"] },
+        { chapter: 5, verse: 16, text: "Therefore, confess your sins to one another, and pray for one another, so that you may be healed", keywords: ["confess", "sins", "pray", "healed"] }
+      ],
+      "Philippians": [
+        { chapter: 1, verse: 6, text: "For I am confident of this very thing, that He who began a good work in you will perfect it until the day of Christ Jesus", keywords: ["confident", "good", "perfect", "Christ"] },
+        { chapter: 2, verse: 5, text: "Have this attitude in yourselves which was also in Christ Jesus", keywords: ["attitude", "Christ", "Jesus"] },
+        { chapter: 4, verse: 13, text: "I can do all things through Him who strengthens me", keywords: ["things", "strengthens"] },
+        { chapter: 4, verse: 8, text: "Finally, brethren, whatever is true, whatever is honorable, whatever is right, whatever is pure, whatever is lovely, whatever is of good repute, if there is any excellence and if anything worthy of praise, dwell on these things", keywords: ["true", "honorable", "right", "pure", "lovely", "praise"] },
+        { chapter: 3, verse: 14, text: "I press on toward the goal for the prize of the upward call of God in Christ Jesus", keywords: ["press", "goal", "prize", "upward", "Christ"] },
+        { chapter: 1, verse: 21, text: "For to me, to live is Christ and to die is gain", keywords: ["live", "Christ", "die", "gain"] }
+      ],
+      "Colossians": [
+        { chapter: 1, verse: 16, text: "For by Him all things were created, both in the heavens and on earth, visible and invisible, whether thrones or dominions or rulers or authorities—all things have been created through Him and for Him", keywords: ["created", "heavens", "earth", "thrones", "authorities"] },
+        { chapter: 2, verse: 6, text: "As you therefore have received Christ Jesus the Lord, so walk in Him", keywords: ["received", "Christ", "Lord", "walk"] },
+        { chapter: 3, verse: 23, text: "Whatever you do, do your work heartily, as for the Lord rather than for men", keywords: ["Whatever", "heartily", "Lord", "men"] },
+        { chapter: 1, verse: 13, text: "For He rescued us from the domain of darkness, and transferred us to the kingdom of His beloved Son", keywords: ["rescued", "darkness", "kingdom", "beloved"] },
+        { chapter: 3, verse: 12, text: "So, as those who have been chosen of God, holy and beloved, put on a heart of compassion, kindness, humility, gentleness and patience", keywords: ["chosen", "holy", "beloved", "compassion", "kindness", "humility"] },
+        { chapter: 4, verse: 6, text: "Let your speech always be with grace, as though seasoned with salt, so that you will know how you should respond to each person", keywords: ["speech", "grace", "salt", "respond"] }
+      ],
+      "Titus": [
+        { chapter: 2, verse: 11, text: "For the grace of God has appeared, bringing salvation to all men", keywords: ["grace", "salvation", "men"] },
+        { chapter: 3, verse: 5, text: "He saved us, not on the basis of deeds which we have done in righteousness, but according to His mercy", keywords: ["saved", "deeds", "righteousness", "mercy"] },
+        { chapter: 2, verse: 7, text: "In all things show yourself to be an example of good works, with purity in doctrine, dignified", keywords: ["example", "works", "purity", "doctrine", "dignified"] },
+        { chapter: 1, verse: 2, text: "In the hope of eternal life, which God, who cannot lie, promised long ages ago", keywords: ["hope", "eternal", "God", "promised"] },
+        { chapter: 3, verse: 8, text: "This is a trustworthy statement; and concerning these things I want you to speak confidently", keywords: ["trustworthy", "statement", "speak", "confidently"] },
+        { chapter: 2, verse: 12, text: "Teaching us to deny ungodliness and worldly desires and to live sensibly, righteously and godly in the present age", keywords: ["deny", "ungodliness", "worldly", "sensibly", "godly"] }
+      ]
+    };
+
+    const state = {
+      selectedBook: "1 Peter",
+      mode: "keywords",
+      selectedVerses: [],
+      currentIndex: 0,
+      currentVerse: null,
+      revealed: false,
+      correct: 0,
+      attempts: 0,
+      total: 0,
+      answerLocked: false
+    };
+
+    const bookListEl = document.getElementById("bookList");
+    const bookSelectEl = document.getElementById("bookSelect");
+    const modeSelectEl = document.getElementById("modeSelect");
+    const minVerseEl = document.getElementById("minVerse");
+    const maxVerseEl = document.getElementById("maxVerse");
+    const startBtn = document.getElementById("startBtn");
+    const quizScreenEl = document.getElementById("quizScreen");
+    const setupScreenEl = document.getElementById("setupScreen");
+    const resultScreenEl = document.getElementById("resultScreen");
+    const revealZoneEl = document.getElementById("revealZone");
+    const answerInputEl = document.getElementById("answerInput");
+    const checkBtn = document.getElementById("checkBtn");
+    const skipBtn = document.getElementById("skipBtn");
+    const messageEl = document.getElementById("message");
+    const progressTextEl = document.getElementById("progressText");
+    const verseRefEl = document.getElementById("verseRef");
+    const modeTagEl = document.getElementById("modeTag");
+    const pageTitleEl = document.getElementById("pageTitle");
+
+    const correctValueEl = document.getElementById("correctValue");
+    const attemptValueEl = document.getElementById("attemptValue");
+    const accuracyValueEl = document.getElementById("accuracyValue");
+    const resultCorrectEl = document.getElementById("resultCorrect");
+    const resultTotalEl = document.getElementById("resultTotal");
+    const resultAccuracyEl = document.getElementById("resultAccuracy");
+    const retryBtn = document.getElementById("retryBtn");
+    const newBookBtn = document.getElementById("newBookBtn");
+
+    function buildBookList() {
+      bookListEl.innerHTML = "";
+      books.forEach((book) => {
+        const btn = document.createElement("button");
+        btn.className = "book-btn" + (book === state.selectedBook ? " active" : "");
+        btn.textContent = book;
+        btn.addEventListener("click", () => {
+          state.selectedBook = book;
+          syncBookSelection();
+          updateVerseRange();
+          setPageState("setup");
+        });
+        bookListEl.appendChild(btn);
+      });
+    }
+
+    function syncBookSelection() {
+      bookSelectEl.value = state.selectedBook;
+      document.querySelectorAll(".book-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.textContent === state.selectedBook);
+      });
+      pageTitleEl.textContent = state.selectedBook;
+      modeTagEl.textContent = state.mode === "keywords" ? "Keywords" : "Verse Recall";
+    }
+
+    function updateVerseRange() {
+      const list = verses[state.selectedBook] || [];
+      const highest = Math.max(...list.map(v => v.verse), 1);
+      minVerseEl.innerHTML = "";
+      maxVerseEl.innerHTML = "";
+
+      for (let i = 1; i <= highest; i++) {
+        const minOpt = document.createElement("option");
+        minOpt.value = String(i);
+        minOpt.textContent = String(i);
+        const maxOpt = document.createElement("option");
+        maxOpt.value = String(i);
+        maxOpt.textContent = String(i);
+        minVerseEl.appendChild(minOpt);
+        maxVerseEl.appendChild(maxOpt);
+      }
+
+      minVerseEl.value = "1";
+      maxVerseEl.value = String(highest);
+    }
+
+    function populateBookSelect() {
+      bookSelectEl.innerHTML = books.map(book => `<option value="${book}">${book}</option>`).join("");
+      bookSelectEl.value = state.selectedBook;
+    }
+
+    function setMessage(text, kind = "") {
+      messageEl.textContent = text;
+      messageEl.className = "message" + (kind ? ` ${kind}` : "");
+    }
+
+    function setPageState(which) {
+      setupScreenEl.classList.toggle("visible", which === "setup");
+      quizScreenEl.classList.toggle("visible", which === "quiz");
+      resultScreenEl.classList.toggle("visible", which === "result");
+      modeTagEl.textContent = state.mode === "keywords" ? "Keywords" : "Verse Recall";
+    }
+
+    function getQuestionsForBook() {
+      const all = verses[state.selectedBook] || [];
+      const minVerse = Number(minVerseEl.value || 1);
+      const maxVerse = Number(maxVerseEl.value || all.length);
+      return all.filter(v => v.verse >= minVerse && v.verse <= maxVerse);
+    }
+
+    function buildCurrentKeywordMarkup(verse) {
+      const keywordMap = new Set((verse.keywords || []).map(k => k.toLowerCase()));
+      const currentKeyword = verse.keywords[0] || "";
+      const words = verse.text.split(/\s+/);
+
+      return words.map((word) => {
+        const clean = word.replace(/[.,;:!?"']/g, "");
+        const lower = clean.toLowerCase();
+        let className = "keyword";
+        if (keywordMap.has(lower)) {
+          className += " green";
+        }
+        if (lower === currentKeyword.toLowerCase()) {
+          className += " current";
+        }
+        return `<span class="${className}">${word}</span>`;
+      }).join(" ");
+    }
+
+    function renderQuestion() {
+      state.answerLocked = false;
+      state.revealed = false;
+      const list = state.selectedVerses;
+      if (!list.length) {
+        finishQuiz();
+        return;
+      }
+
+      state.currentVerse = list[state.currentIndex];
+      const idx = state.currentIndex + 1;
+      progressTextEl.textContent = `${idx}/${list.length}`;
+      verseRefEl.textContent = `${state.selectedBook} ${state.currentVerse.chapter}:${state.currentVerse.verse}`;
+      revealZoneEl.classList.add("empty");
+      revealZoneEl.innerHTML = "Press the space bar to reveal the verse.";
+      answerInputEl.value = "";
+      answerInputEl.focus();
+      setMessage("");
+    }
+
+    function revealVerse() {
+      if (!state.currentVerse || state.revealed || state.answerLocked) return;
+      state.revealed = true;
+      revealZoneEl.classList.remove("empty");
+      revealZoneEl.innerHTML = buildCurrentKeywordMarkup(state.currentVerse);
+      setMessage("Keywords are highlighted. Type the verse from memory.");
+    }
+
+    function normalizeText(text) {
+      return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+    }
+
+    function evaluateAnswer() {
+      if (!state.currentVerse || state.answerLocked) return;
+      const typed = answerInputEl.value.trim();
+      if (!typed) {
+        setMessage("Type the verse before checking.", "error");
+        return;
+      }
+
+      state.answerLocked = true;
+      state.attempts += 1;
+      const correct = normalizeText(typed) === normalizeText(state.currentVerse.text);
+
+      if (correct) {
+        state.correct += 1;
+        setMessage("Correct. Moving to the next verse.", "success");
+      } else {
+        setMessage(`Not quite. The verse was: "${state.currentVerse.text}"`, "error");
+      }
+
+      updateProgressSidebar();
+      setTimeout(() => {
+        nextQuestion();
+      }, 900);
+    }
+
+    function nextQuestion() {
+      const total = state.selectedVerses.length;
+      if (state.currentIndex < total - 1) {
+        state.currentIndex += 1;
+        renderQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      const total = state.selectedVerses.length || 0;
+      const percent = total ? Math.round((state.correct / Math.max(state.attempts, 1)) * 100) : 0;
+      resultCorrectEl.textContent = state.correct;
+      resultTotalEl.textContent = total;
+      resultAccuracyEl.textContent = `${percent}%`;
+      setPageState("result");
+      setMessage("");
+      updateProgressSidebar();
+    }
+
+    function updateProgressSidebar() {
+      const accuracy = state.attempts ? Math.round((state.correct / state.attempts) * 100) : 0;
+      correctValueEl.textContent = state.correct;
+      attemptValueEl.textContent = state.attempts;
+      accuracyValueEl.textContent = `${accuracy}%`;
+    }
+
+    function resetQuizState() {
+      state.currentIndex = 0;
+      state.correct = 0;
+      state.attempts = 0;
+      state.answerLocked = false;
+      state.revealed = false;
+    }
+
+    function beginQuiz() {
+      const list = getQuestionsForBook();
+      if (!list.length) {
+        setMessage("No verses match that range.", "error");
+        return;
+      }
+
+      resetQuizState();
+      state.selectedVerses = list;
+      setPageState("quiz");
+      renderQuestion();
+    }
+
+    function setSelectedBookFromSelect() {
+      state.selectedBook = bookSelectEl.value;
+      syncBookSelection();
+      updateVerseRange();
+    }
+
+    function bindEvents() {
+      bookSelectEl.addEventListener("change", setSelectedBookFromSelect);
+      modeSelectEl.addEventListener("change", (e) => {
+        state.mode = e.target.value;
+        syncBookSelection();
+      });
+
+      minVerseEl.addEventListener("change", () => {
+        const min = Number(minVerseEl.value);
+        const max = Number(maxVerseEl.value);
+        if (min > max) maxVerseEl.value = min;
+      });
+
+      maxVerseEl.addEventListener("change", () => {
+        const max = Number(maxVerseEl.value);
+        const min = Number(minVerseEl.value);
+        if (max < min) minVerseEl.value = max;
+      });
+
+      startBtn.addEventListener("click", beginQuiz);
+      checkBtn.addEventListener("click", evaluateAnswer);
+      skipBtn.addEventListener("click", () => {
+        if (!state.currentVerse) return;
+        state.answerLocked = true;
+        setMessage(`Skipped. The verse was: "${state.currentVerse.text}"`, "error");
+        setTimeout(() => {
+          nextQuestion();
+        }, 900);
+      });
+
+      answerInputEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          evaluateAnswer();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (state.selectedVerses.length && !state.revealed && event.code === "Space") {
+          event.preventDefault();
+          revealVerse();
+        }
+      });
+
+      retryBtn.addEventListener("click", beginQuiz);
+      newBookBtn.addEventListener("click", () => {
+        setPageState("setup");
+        setMessage("");
+      });
+    }
+
+    populateBookSelect();
+    buildBookList();
+    updateVerseRange();
+    syncBookSelection();
+    bindEvents();
+    updateProgressSidebar();
+  </script>
+</body>
+</html>
