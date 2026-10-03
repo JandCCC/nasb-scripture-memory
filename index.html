@@ -243,8 +243,8 @@
     }
 
     .reveal-zone {
-      background: rgba(255,255,255,0.12);
-      border: 1px dashed rgba(41,77,60,0.15);
+      background: transparent;
+      border: none;
       min-height: 180px;
       display: flex;
       align-items: center;
@@ -253,18 +253,19 @@
       text-align: center;
       color: var(--forest-deep);
       font-size: clamp(1.1rem, 2vw, 2rem);
-      line-height: 1.6;
+      line-height: 1.8;
       font-weight: 500;
+      white-space: normal;
+      word-wrap: break-word;
     }
 
     .reveal-zone.empty {
       color: var(--muted);
       font-size: 1.05rem;
-      border-style: dashed;
     }
 
     .keyword {
-      display: inline-block;
+      display: inline;
       padding: 0 0.15em;
       background: rgba(94, 140, 106, 0.15);
       color: var(--forest-deep);
@@ -550,6 +551,7 @@
       currentIndex: 0,
       currentVerse: null,
       revealed: false,
+      spacebarPressCount: 0,
       correct: 0,
       attempts: 0,
       total: 0,
@@ -675,6 +677,7 @@
     function renderQuestion() {
       state.answerLocked = false;
       state.revealed = false;
+      state.spacebarPressCount = 0;
       const list = state.selectedVerses;
       if (!list.length) {
         finishQuiz();
@@ -686,16 +689,23 @@
       progressTextEl.textContent = `${idx}/${list.length}`;
       verseRefEl.textContent = `${state.selectedBook} ${state.currentVerse.chapter}:${state.currentVerse.verse}`;
       revealZoneEl.classList.add("empty");
-      revealZoneEl.innerHTML = "Press the space bar to reveal the verse.";
+      revealZoneEl.innerHTML = "Quote the verse to yourself.";
       setMessage("");
     }
 
     function revealVerse() {
-      if (!state.currentVerse || state.revealed || state.answerLocked) return;
-      state.revealed = true;
-      revealZoneEl.classList.remove("empty");
-      revealZoneEl.innerHTML = buildCurrentKeywordMarkup(state.currentVerse);
-      setMessage("Keywords are highlighted. Was the verse memorized?");
+      if (!state.currentVerse || state.answerLocked) return;
+      
+      state.spacebarPressCount++;
+      
+      if (state.spacebarPressCount === 1) {
+        state.revealed = true;
+        revealZoneEl.classList.remove("empty");
+        revealZoneEl.innerHTML = buildCurrentKeywordMarkup(state.currentVerse);
+        setMessage("Keywords are highlighted. Press space again to mark as correct.");
+      } else if (state.spacebarPressCount === 2) {
+        recordAnswer(true);
+      }
     }
 
     function recordAnswer(correct) {
@@ -750,6 +760,7 @@
       state.attempts = 0;
       state.answerLocked = false;
       state.revealed = false;
+      state.spacebarPressCount = 0;
     }
 
     function beginQuiz() {
@@ -795,7 +806,7 @@
       skipBtn.addEventListener("click", () => recordAnswer(false));
 
       document.addEventListener("keydown", (event) => {
-        if (state.selectedVerses.length && !state.revealed && event.code === "Space") {
+        if (state.selectedVerses.length && !state.answerLocked && event.code === "Space") {
           event.preventDefault();
           revealVerse();
         }
