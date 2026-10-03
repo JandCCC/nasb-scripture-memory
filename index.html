@@ -284,14 +284,6 @@
       gap: 12px;
     }
 
-    .answer-wrap input {
-      border: 1px solid rgba(41,77,60,0.18);
-      background: #fff;
-      padding: 14px 12px;
-      font-size: 1rem;
-      color: var(--ink);
-    }
-
     .button-row {
       display: flex;
       gap: 12px;
@@ -453,10 +445,9 @@
             <div id="verseRef" class="verse-ref">1 Peter 1:3</div>
             <div id="revealZone" class="reveal-zone empty">Quote the verse to yourself.</div>
             <div class="answer-wrap">
-              <input id="answerInput" type="text" placeholder="Type the verse here..." />
               <div class="button-row">
-                <button id="checkBtn" class="square">Check</button>
-                <button id="skipBtn" class="square secondary">Skip</button>
+                <button id="gotItBtn" class="square">I got it</button>
+                <button id="missedBtn" class="square secondary">Missed it</button>
               </div>
             </div>
             <div id="message" class="message"></div>
@@ -575,9 +566,8 @@
     const setupScreenEl = document.getElementById("setupScreen");
     const resultScreenEl = document.getElementById("resultScreen");
     const revealZoneEl = document.getElementById("revealZone");
-    const answerInputEl = document.getElementById("answerInput");
-    const checkBtn = document.getElementById("checkBtn");
-    const skipBtn = document.getElementById("skipBtn");
+    const checkBtn = document.getElementById("gotItBtn");
+    const skipBtn = document.getElementById("missedBtn");
     const messageEl = document.getElementById("message");
     const progressTextEl = document.getElementById("progressText");
     const verseRefEl = document.getElementById("verseRef");
@@ -669,7 +659,7 @@
       const words = verse.text.split(/\s+/);
 
       return words.map((word) => {
-        const clean = word.replace(/[.,;:!?"']/g, "");
+        const clean = word.replace(/[.,;:!?'"\-]/g, "");
         const lower = clean.toLowerCase();
         let className = "keyword";
         if (keywordMap.has(lower)) {
@@ -697,8 +687,6 @@
       verseRefEl.textContent = `${state.selectedBook} ${state.currentVerse.chapter}:${state.currentVerse.verse}`;
       revealZoneEl.classList.add("empty");
       revealZoneEl.innerHTML = "Press the space bar to reveal the verse.";
-      answerInputEl.value = "";
-      answerInputEl.focus();
       setMessage("");
     }
 
@@ -707,30 +695,19 @@
       state.revealed = true;
       revealZoneEl.classList.remove("empty");
       revealZoneEl.innerHTML = buildCurrentKeywordMarkup(state.currentVerse);
-      setMessage("Keywords are highlighted. Type the verse from memory.");
+      setMessage("Keywords are highlighted. Was the verse memorized?");
     }
 
-    function normalizeText(text) {
-      return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
-    }
-
-    function evaluateAnswer() {
+    function recordAnswer(correct) {
       if (!state.currentVerse || state.answerLocked) return;
-      const typed = answerInputEl.value.trim();
-      if (!typed) {
-        setMessage("Type the verse before checking.", "error");
-        return;
-      }
-
       state.answerLocked = true;
       state.attempts += 1;
-      const correct = normalizeText(typed) === normalizeText(state.currentVerse.text);
 
       if (correct) {
         state.correct += 1;
         setMessage("Correct. Moving to the next verse.", "success");
       } else {
-        setMessage(`Not quite. The verse was: "${state.currentVerse.text}"`, "error");
+        setMessage(`Missed it. The verse was: "${state.currentVerse.text}"`, "error");
       }
 
       updateProgressSidebar();
@@ -814,21 +791,8 @@
       });
 
       startBtn.addEventListener("click", beginQuiz);
-      checkBtn.addEventListener("click", evaluateAnswer);
-      skipBtn.addEventListener("click", () => {
-        if (!state.currentVerse) return;
-        state.answerLocked = true;
-        setMessage(`Skipped. The verse was: "${state.currentVerse.text}"`, "error");
-        setTimeout(() => {
-          nextQuestion();
-        }, 900);
-      });
-
-      answerInputEl.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          evaluateAnswer();
-        }
-      });
+      checkBtn.addEventListener("click", () => recordAnswer(true));
+      skipBtn.addEventListener("click", () => recordAnswer(false));
 
       document.addEventListener("keydown", (event) => {
         if (state.selectedVerses.length && !state.revealed && event.code === "Space") {
